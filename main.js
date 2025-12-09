@@ -12,43 +12,36 @@ function markAsChanged() {
   }
 }
 
-// When save button is clicked, push to GitHub
+// When save button is clicked, show instructions
 if (saveButton) {
-  saveButton.addEventListener('click', async () => {
+  saveButton.addEventListener('click', () => {
     saveButton.classList.add('saving');
-    saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Saving...</span>';
+    saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Copying Instructions...</span>';
     
-    try {
-      // Fetch to trigger git push via GitHub API or webhook
-      const response = await fetch(window.location.href, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        }
-      }).catch(() => {
-        // If fetch fails, that's ok - just for notification
-      });
+    // Show instructions in alert
+    setTimeout(() => {
+      alert(
+        '📝 Changes Detected!\n\n' +
+        'To save your changes to GitHub and deploy live:\n\n' +
+        '1. Open PowerShell in your portfolio folder\n' +
+        '2. Run: .\\push-changes.ps1 "Your change description"\n\n' +
+        'Example:\n' +
+        '.\\push-changes.ps1 "Add new project"\n\n' +
+        'Your changes will be live within 2 minutes!'
+      );
       
-      // Success - show confirmation
-      setTimeout(() => {
-        saveButton.classList.remove('saving');
-        saveButton.classList.add('success');
-        saveButton.innerHTML = '<i class="fa-solid fa-check"></i><span class="save-text">Saved!</span>';
-        
-        // Hide button after 3 seconds
-        setTimeout(() => {
-          saveButton.style.display = 'none';
-          saveButton.classList.remove('success');
-          saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Save</span>';
-          hasChanges = false;
-        }, 3000);
-      }, 1000);
-    } catch (error) {
-      console.error('Error saving:', error);
       saveButton.classList.remove('saving');
-      saveButton.innerHTML = '<i class="fa-solid fa-exclamation"></i><span class="save-text">Error!</span>';
-    }
+      saveButton.classList.add('success');
+      saveButton.innerHTML = '<i class="fa-solid fa-check"></i><span class="save-text">Instructions Shown!</span>';
+      
+      // Hide button after 4 seconds
+      setTimeout(() => {
+        saveButton.style.display = 'none';
+        saveButton.classList.remove('success');
+        saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Save</span>';
+        hasChanges = false;
+      }, 4000);
+    }, 500);
   });
 }
 
@@ -807,8 +800,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Load personal data and populate DOM
 fetch('data.json')
-  .then(res => res.json())
+  .then(res => {
+    // Only process if file exists (suppress 404 errors)
+    if (!res.ok) return null;
+    return res.json();
+  })
   .then(data => {
+    // Skip if data.json doesn't exist
+    if (!data) return;
     const p = data.profile || {};
 
     // Loading screen texts
