@@ -254,7 +254,8 @@ hr {
 }
 
 .home img {
-  width: 400px;
+  width: 650px;
+  height: 400px !important;
   border-radius: 10px;
 }
 
@@ -296,7 +297,7 @@ hr {
 .about img{
     position: relative;
     bottom: 85px;
-    width: 400px;
+    width: 8000px;
     height: 400px;
     border-radius: 15px;
     border: 1px solid black;
@@ -868,8 +869,8 @@ body {
   }
 
   .home img, .about img {
-    width: 100%;
-    height: auto;
+    width: 300px;
+    height: 150px;
   }
 
   .ul-list {
@@ -976,7 +977,7 @@ body {
   .project-card img,
   .service-card img {
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
     height: auto;
     display: block;
     margin: 0 auto 15px auto;
