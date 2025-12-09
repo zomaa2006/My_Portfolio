@@ -1,3 +1,45 @@
+// Force refresh and clear cache functionality
+document.addEventListener('DOMContentLoaded', () => {
+  const refreshButton = document.getElementById('refreshButton');
+  
+  if (refreshButton) {
+    refreshButton.addEventListener('click', () => {
+      // Add spinning animation
+      refreshButton.classList.add('spinning');
+      
+      // Clear all caches
+      if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+          cacheNames.forEach(cacheName => {
+            caches.delete(cacheName);
+          });
+        });
+      }
+      
+      // Clear localStorage
+      localStorage.clear();
+      
+      // Clear sessionStorage
+      sessionStorage.clear();
+      
+      // Clear browser cache headers
+      fetch(window.location.href, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      // Hard refresh after 500ms
+      setTimeout(() => {
+        // Force hard refresh (Ctrl + Shift + R equivalent)
+        window.location.href = window.location.href + '?nocache=' + new Date().getTime();
+      }, 500);
+    });
+  }
+});
+
 const navLinks = document.querySelectorAll('.ul-list li a');
 const sections = document.querySelectorAll('section');
 
