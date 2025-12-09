@@ -20,15 +20,11 @@
     <!-- Supabase client (replace placeholders below with your keys) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script>
-      // Replace with your Supabase project URL and anon key
-      // Example: const SUPABASE_URL = 'https://xyzcompany.supabase.co';
-      //          const SUPABASE_ANON_KEY = 'public-anon-key';
-      const SUPABASE_URL = 'REPLACE_WITH_SUPABASE_URL';
-      const SUPABASE_ANON_KEY = 'REPLACE_WITH_SUPABASE_ANON_KEY';
-      if (SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== 'REPLACE_WITH_SUPABASE_URL') {
+      const SUPABASE_URL = 'https://krwbadragidqzjoqaxpq.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtyd2JhZHJhZ2lkcXpqb3FheHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDM3NTYsImV4cCI6MjA4MDgxOTc1Nn0.KjISMtzRsUzY-xSPPMZZnxWOkfplWOLdIJ64-L3rtJU';
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       } else {
-        // supabase not initialized until you replace keys above
         window.supabase = null;
       }
     </script>
