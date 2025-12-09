@@ -295,7 +295,7 @@ hr {
 
 .about img{
     position: relative;
-    bottom: 85px;
+    bottom: px;
     width: 400px;
     height: 400px;
     border-radius: 15px;
@@ -919,6 +919,14 @@ body {
   .footer-links {
     flex-direction: column;
     gap: 15px;
+  }
+}
+
+/* Small-screen tweak: push About image a bit lower to avoid overlap */
+@media (max-width: 480px) {
+  .about-image img {
+    margin-top: 18px;
+    display: block;
   }
 }
 
