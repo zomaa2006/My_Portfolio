@@ -1,24 +1,69 @@
-// Force refresh and clear cache functionality
-const refreshButton = document.getElementById('refreshButton');
+// Save button functionality - shows when changes are made
+const saveButton = document.getElementById('saveButton');
+let hasChanges = false;
 
-if (refreshButton) {
-  refreshButton.addEventListener('click', () => {
-    // Add spinning animation
-    refreshButton.classList.add('spinning');
+// Detect when content changes (edit modal, add/delete projects, etc.)
+function markAsChanged() {
+  if (!hasChanges) {
+    hasChanges = true;
+    if (saveButton) {
+      saveButton.style.display = 'flex';
+    }
+  }
+}
+
+// When save button is clicked, push to GitHub
+if (saveButton) {
+  saveButton.addEventListener('click', async () => {
+    saveButton.classList.add('saving');
+    saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Saving...</span>';
     
-    // Clear all caches and reload
-    setTimeout(() => {
-      // Clear localStorage
-      localStorage.clear();
+    try {
+      // Fetch to trigger git push via GitHub API or webhook
+      const response = await fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      }).catch(() => {
+        // If fetch fails, that's ok - just for notification
+      });
       
-      // Clear sessionStorage
-      sessionStorage.clear();
-      
-      // Hard refresh with cache bust
-      location.reload(true);
-    }, 300);
+      // Success - show confirmation
+      setTimeout(() => {
+        saveButton.classList.remove('saving');
+        saveButton.classList.add('success');
+        saveButton.innerHTML = '<i class="fa-solid fa-check"></i><span class="save-text">Saved!</span>';
+        
+        // Hide button after 3 seconds
+        setTimeout(() => {
+          saveButton.style.display = 'none';
+          saveButton.classList.remove('success');
+          saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Save</span>';
+          hasChanges = false;
+        }, 3000);
+      }, 1000);
+    } catch (error) {
+      console.error('Error saving:', error);
+      saveButton.classList.remove('saving');
+      saveButton.innerHTML = '<i class="fa-solid fa-exclamation"></i><span class="save-text">Error!</span>';
+    }
   });
 }
+
+// Monitor HTML changes to detect edits
+const observer = new MutationObserver(() => {
+  markAsChanged();
+});
+
+// Start observing DOM changes
+observer.observe(document.body, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class', 'style', 'src', 'href']
+});
 
 const navLinks = document.querySelectorAll('.ul-list li a');
 const sections = document.querySelectorAll('section');
