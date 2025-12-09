@@ -275,64 +275,48 @@ function renderProjects(projects, isAdmin = false) {
 }
 
 // Initialize projects from localStorage or default projects
-function initializeProjects() {
+async function fetchProjectsFromSupabase() {
+  if (!window.supabase) return null;
+  try {
+    const { data, error } = await window.supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    // Map Supabase rows to local project format
+    return (data || []).map(row => ({
+      title: row.title || '',
+      description: row.description || '',
+      image: row.image_url || 'images/img.jpg',
+      github: row.github_url || '#',
+      demo: row.live_url || '#',
+      skills: Array.isArray(row.skills) ? row.skills : (row.skills ? row.skills.split(',') : [])
+    }));
+  } catch (err) {
+    console.error('Supabase fetch error', err);
+    return null;
+  }
+}
+
+async function initializeProjects() {
+  // Try localStorage first
   let projects = getStoredProjects();
-  
-  // If no stored projects, use default projects from HTML
-  if (projects.length === 0) {
-    projects = [
-      {
-        title: "E-Commerce Website",
-        description: "Modern online store with product filtering, cart, and payment system.",
-        image: "images/Cleveroad.jpg",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "CSS", "JavaScript"]
-      },
-      {
-        title: "Portfolio Website",
-        description: "Personal portfolio to showcase my design and coding projects.",
-        image: "images/Capture d'écran 2025-10-22 182207.png",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "CSS", "Bootstrap"]
-      },
-      {
-        title: "Weather App",
-        description: "Responsive app showing real-time weather data using API integration.",
-        image: "images/Weather Forecast Dashboard.jpg",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "CSS", "API"]
-      },
-      {
-        title: "Blog Website",
-        description: "Clean and simple blogging platform with markdown support.",
-        image: "images/WordPress dashboard design concept.jpg",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "Tailwind", "JavaScript"]
-      },
-      {
-        title: "Game Landing Page",
-        description: "Landing page for a game with animations and parallax effects.",
-        image: "images/Game Dashboard Design.jpg",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "CSS", "GSAP"]
-      },
-      {
-        title: "Task Manager",
-        description: "Task tracking web app with CRUD features and clean UI.",
-        image: "images/Task manager app.jpg",
-        github: "#",
-        demo: "#",
-        skills: ["HTML", "CSS", "JS"]
-      }
-    ];
+
+  // If no stored projects, try Supabase (if configured)
+  if ((!projects || projects.length === 0) && window.supabase) {
+    const sbProjects = await fetchProjectsFromSupabase();
+    if (Array.isArray(sbProjects) && sbProjects.length > 0) {
+      projects = sbProjects;
+      saveProjects(projects);
+    }
+  }
+
+  // If still no projects, fall back to a minimal empty array (you will add via admin)
+  if (!projects || projects.length === 0) {
+    projects = [];
     saveProjects(projects);
   }
-  
+
   renderProjects(projects);
 }
 
