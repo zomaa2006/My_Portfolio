@@ -1,10 +1,11 @@
-// Save button functionality - shows when changes are made
+// Save button functionality - shows after password entry and edits
 const saveButton = document.getElementById('saveButton');
 let hasChanges = false;
+let isAdminMode = false;
 
 // Detect when content changes (edit modal, add/delete projects, etc.)
 function markAsChanged() {
-  if (!hasChanges) {
+  if (isAdminMode && !hasChanges) {
     hasChanges = true;
     if (saveButton) {
       saveButton.style.display = 'flex';
@@ -12,36 +13,60 @@ function markAsChanged() {
   }
 }
 
-// When save button is clicked, show instructions
+// Check GitHub status via API
+async function checkGitHubStatus() {
+  try {
+    // Fetch latest commit from GitHub API
+    const response = await fetch('https://api.github.com/repos/zomaa2006/My_Portfolio/commits/main');
+    const data = await response.json();
+    return { success: true, hash: data.sha, message: data.commit.message };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// When save button is clicked, check GitHub status
 if (saveButton) {
-  saveButton.addEventListener('click', () => {
+  saveButton.addEventListener('click', async () => {
     saveButton.classList.add('saving');
-    saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Copying Instructions...</span>';
+    saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span class="save-text">Checking...</span>';
     
-    // Show instructions in alert
+    // Check GitHub status
+    const gitStatus = await checkGitHubStatus();
+    
     setTimeout(() => {
-      alert(
-        '📝 Changes Detected!\n\n' +
-        'To save your changes to GitHub and deploy live:\n\n' +
-        '1. Open PowerShell in your portfolio folder\n' +
-        '2. Run: .\\push-changes.ps1 "Your change description"\n\n' +
-        'Example:\n' +
-        '.\\push-changes.ps1 "Add new project"\n\n' +
-        'Your changes will be live within 2 minutes!'
-      );
-      
-      saveButton.classList.remove('saving');
-      saveButton.classList.add('success');
-      saveButton.innerHTML = '<i class="fa-solid fa-check"></i><span class="save-text">Instructions Shown!</span>';
-      
-      // Hide button after 4 seconds
-      setTimeout(() => {
-        saveButton.style.display = 'none';
-        saveButton.classList.remove('success');
-        saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Save</span>';
-        hasChanges = false;
-      }, 4000);
-    }, 500);
+      if (gitStatus.success) {
+        saveButton.classList.remove('saving');
+        saveButton.classList.add('success');
+        saveButton.innerHTML = '<i class="fa-solid fa-check"></i><span class="save-text">Edits Done! ✓</span>';
+        
+        // Clear browser cache
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
+        
+        // Clear localStorage cache version if exists
+        localStorage.removeItem('_cachedVersion');
+        
+        // Reload page to show fresh content
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      } else {
+        saveButton.classList.remove('saving');
+        saveButton.classList.add('error');
+        saveButton.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i><span class="save-text">Error!</span>';
+        alert('❌ Error: Changes not detected on GitHub!\n\nPlease run the PowerShell script:\n.\\push-changes.ps1 "Your change description"\n\nError details: ' + gitStatus.error);
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+          saveButton.classList.remove('error');
+          saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span class="save-text">Save</span>';
+        }, 3000);
+      }
+    }, 1000);
   });
 }
 
@@ -342,7 +367,6 @@ function getStoredPassword() {
 function savePassword(password) {
   localStorage.setItem('adminPassword', password);
 }
-let isAdminMode = false;
 let editingProjectIndex = null;
 
 // Ensure projects initialize even if loading screen doesn't run
