@@ -660,12 +660,26 @@ function editProject(index) {
 }
 
 // Delete Project
-function deleteProject(index) {
+async function deleteProject(index) {
   if (confirm('Are you sure you want to delete this project?')) {
     const projects = getStoredProjects();
-    projects.splice(index, 1);
-    saveProjects(projects);
-    renderProjects(projects, true);
+    const projectToDelete = projects[index];
+    
+    // Delete from Supabase if available
+    if (window.supabase) {
+      await deleteProjectFromSupabase(projectToDelete.title);
+      // Reload projects from Supabase
+      const sbProjects = await fetchProjectsFromSupabase();
+      if (Array.isArray(sbProjects)) {
+        saveProjects(sbProjects);
+        renderProjects(sbProjects, true);
+      }
+    } else {
+      // Fallback: use localStorage only
+      projects.splice(index, 1);
+      saveProjects(projects);
+      renderProjects(projects, true);
+    }
   }
 }
 
@@ -717,7 +731,7 @@ window.addEventListener('click', (e) => {
 
 // Add/Update Project Form
 if (projectForm) {
-  projectForm.addEventListener('submit', (e) => {
+  projectForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const title = document.getElementById('projectTitle').value;
@@ -743,18 +757,37 @@ if (projectForm) {
       skills
     };
     
-    const projects = getStoredProjects();
-    
-    if (editingProjectIndex !== null) {
-      // Update existing project
-      projects[editingProjectIndex] = projectData;
+    // Save to Supabase if available
+    if (window.supabase) {
+      if (editingProjectIndex !== null) {
+        // Update project in Supabase (we'll use title as identifier since we don't store IDs)
+        // For now, just update localStorage and reload from Supabase after
+        await updateProjectInSupabase(editingProjectIndex, projectData);
+      } else {
+        // Add new project to Supabase
+        await addProjectToSupabase(projectData);
+      }
+      // Reload projects from Supabase
+      const sbProjects = await fetchProjectsFromSupabase();
+      if (Array.isArray(sbProjects) && sbProjects.length > 0) {
+        saveProjects(sbProjects);
+        renderProjects(sbProjects, true);
+      }
     } else {
-      // Add new project
-      projects.push(projectData);
+      // Fallback: use localStorage only
+      const projects = getStoredProjects();
+      
+      if (editingProjectIndex !== null) {
+        // Update existing project
+        projects[editingProjectIndex] = projectData;
+      } else {
+        // Add new project
+        projects.push(projectData);
+      }
+      
+      saveProjects(projects);
+      renderProjects(projects, true);
     }
-    
-    saveProjects(projects);
-    renderProjects(projects, true);
     
     projectModal.style.display = 'none';
     projectForm.reset();
@@ -764,6 +797,81 @@ if (projectForm) {
     document.getElementById('projectModalTitle').textContent = 'Add New Project';
     document.getElementById('submitProjectBtn').textContent = 'Add Project';
   });
+}
+
+// ====== SUPABASE PROJECT CRUD ======
+async function addProjectToSupabase(projectData) {
+  if (!window.supabase) {
+    console.warn('Supabase not initialized');
+    return null;
+  }
+  try {
+    const { data, error } = await window.supabase
+      .from('projects')
+      .insert([{
+        title: projectData.title,
+        description: projectData.description,
+        image_url: projectData.image,
+        skills: Array.isArray(projectData.skills) ? projectData.skills : (projectData.skills ? projectData.skills.split(',').map(s => s.trim()) : []),
+        github_url: projectData.github,
+        live_url: projectData.demo
+      }]);
+    if (error) throw error;
+    console.log('Project added to Supabase:', data);
+    return data?.[0];
+  } catch (err) {
+    console.error('Error adding project to Supabase:', err);
+    return null;
+  }
+}
+
+async function updateProjectInSupabase(projectIndex, projectData) {
+  if (!window.supabase) {
+    console.warn('Supabase not initialized');
+    return null;
+  }
+  try {
+    const projects = getStoredProjects();
+    const oldProject = projects[projectIndex];
+    // For now, we'll match by title to find the record in Supabase
+    // A better approach is to store the Supabase UUID in localStorage
+    const { data, error } = await window.supabase
+      .from('projects')
+      .update({
+        title: projectData.title,
+        description: projectData.description,
+        image_url: projectData.image,
+        skills: Array.isArray(projectData.skills) ? projectData.skills : (projectData.skills ? projectData.skills.split(',').map(s => s.trim()) : []),
+        github_url: projectData.github,
+        live_url: projectData.demo
+      })
+      .eq('title', oldProject.title);
+    if (error) throw error;
+    console.log('Project updated in Supabase:', data);
+    return data?.[0];
+  } catch (err) {
+    console.error('Error updating project in Supabase:', err);
+    return null;
+  }
+}
+
+async function deleteProjectFromSupabase(projectTitle) {
+  if (!window.supabase) {
+    console.warn('Supabase not initialized');
+    return false;
+  }
+  try {
+    const { error } = await window.supabase
+      .from('projects')
+      .delete()
+      .eq('title', projectTitle);
+    if (error) throw error;
+    console.log('Project deleted from Supabase');
+    return true;
+  } catch (err) {
+    console.error('Error deleting project from Supabase:', err);
+    return false;
+  }
 }
 
 // Add button to open project modal when in admin mode
